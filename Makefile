@@ -5,7 +5,8 @@ include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = DiscordExtras
 $(TWEAK_NAME)_FRAMEWORKS = UIKit
-$(TWEAK_NAME)_LIBRARIES = colorpicker mryipc
+$(TWEAK_NAME)_LIBRARIES = colorpicker rocketbootstrap
+$(TWEAK_NAME)_PRIVATE_FRAMEWORKS = AppSupport
 $(TWEAK_NAME)_FILES = Tweak.x
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc
 

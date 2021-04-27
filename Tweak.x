@@ -1,11 +1,14 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import <MRYIPCCenter.h>
+#import <AppSupport/CPDistributedMessagingCenter.h>
+#import <RocketBootstrap/RocketBootstrap.h>
 
 #define BUNDLE_PATH @"/Library/Application Support/DiscordExtrasFiles.bundle"
 #define CACHE_PATH [NSHomeDirectory() stringByAppendingString:@"/Library/Caches/"]
 #define PATCHED_PATH [CACHE_PATH stringByAppendingString:@"patched.jsbundle"]
 #define PATCHES_FOLDER [BUNDLE_PATH stringByAppendingString:@"/patches"]
+
+//static CPDistributedMessagingCenter *center = nil;
 
 // Clear the cached jsbundle files + the patched jsbundle file on startup
 void clearPatches() {
@@ -24,20 +27,22 @@ void clearPatches() {
 // Create our patched bundle file and return the path to it
 NSURL* createBundleFile(NSURL *originalBundle) {
 	@try {
-		MRYIPCCenter *center = [MRYIPCCenter centerNamed:@"moe.panties.discordextrasserver"];
-		NSString *result = [center callExternalMethod:@selector(executeJSbundleTools:) withArguments:@{
+		CPDistributedMessagingCenter* center = [CPDistributedMessagingCenter centerNamed:@"moe.panties.discordextrasserver"];
+		rocketbootstrap_distributedmessagingcenter_apply(center);
+
+		NSDictionary *result = [center sendMessageAndReceiveReplyName:@"applyPatches" userInfo:@{
 			@"bundlePath": originalBundle.path,
 			@"patchedPath": PATCHED_PATH,
 			@"patchesPath": PATCHES_FOLDER
 		}];
 
-		if ([result isEqualToString:@"error"]) {
+		if ([result objectForKey:@"success"] == false) {
 			NSLog(@"[DiscordExtras] Error creating patched jsbundle, using default one instead.");
 			return originalBundle;
 		}
 
 		NSLog(@"[DiscordExtras] Patched jsbundle was created!");
-		return [[NSURL alloc] initFileURLWithPath:result];
+		return [[NSURL alloc] initFileURLWithPath:[result objectForKey:@"path"]];
 	} @catch(NSException *exception) {
 		NSLog(@"[DiscordExtras] Something went really fucking wrong.");
 		return originalBundle;
@@ -71,4 +76,5 @@ NSURL* createBundleFile(NSURL *originalBundle) {
 
 %ctor {
 	clearPatches();
+	
 }

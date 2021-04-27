@@ -1,10 +1,10 @@
 Package: moe.panties.discordextras
 Name: DiscordExtras
-Version: 1.0.2
+Version: 1.0.3
 Architecture: iphoneos-arm
 Description: Add extra features to Discord via patches!
 Maintainer: Zoey
 Author: Zoey
 Section: Tweaks
 SileoDepiction: https://repo.panties.moe/depictions/discordextras
-Depends: org.coolstar.libhooker, com.muirey03.libmryipc, ws.hbang.common (>= 1.11), ws.hbang.alderis (>= 1.1)
+Depends: org.coolstar.libhooker, com.rpetrich.rocketbootstrap, ws.hbang.common (>= 1.11), ws.hbang.alderis (>= 1.1)

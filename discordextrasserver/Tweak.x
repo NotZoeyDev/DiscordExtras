@@ -1,19 +1,20 @@
 #import <Foundation/Foundation.h>
-#import <MRYIPCCenter.h>
+#import <AppSupport/CPDistributedMessagingCenter.h>
+#import <RocketBootstrap/RocketBootstrap.h>
 #import "NSTask.h"
 
-@interface DiscordExtrasServer : NSObject
+@interface DiscordExtrasServer : NSObject {
+	CPDistributedMessagingCenter * _messagingCenter;
+}
 @end
 
-@implementation DiscordExtrasServer {
-		MRYIPCCenter* _server;
-	}
+@implementation DiscordExtrasServer
 
 	+(void)load {
 		[self sharedInstance];
 	}
 
-	-(NSString*)executeJSbundleTools:(NSDictionary*)args {
+	-(NSDictionary*)handleMessageNamed:(NSString *)name withUserInfo:(NSDictionary*) args {
 		NSString *bundlePath = [args[@"bundlePath"] stringValue];
 		NSString *patchedPath = [args[@"patchedPath"] stringValue];
 		NSString *patchesPath = [args[@"patchesPath"] stringValue];
@@ -36,28 +37,34 @@
 
 		int status = [task terminationStatus];
 
+		NSMutableDictionary *result = [[NSMutableDictionary alloc] init];
+
 		if (status == 0) {
-			return patchedPath;
+			result[@"success"] = @YES;
+			result[@"path"] = patchedPath;
+		} else {
+			result[@"success"] = @NO;
 		}
 
-		return @"error";
+		return result;
 	}
 
-	+(instancetype)sharedInstance {
-		static dispatch_once_t onceToken = 0;
-		__strong static DiscordExtrasServer* sharedInstance = nil;
-
-		dispatch_once(&onceToken, ^{
-			sharedInstance = [[self alloc] init];
+	+ (instancetype)sharedInstance {
+		static dispatch_once_t once = 0;
+		__strong static id sharedInstance = nil;
+		dispatch_once(&once, ^{
+			sharedInstance = [self new];
 		});
-
 		return sharedInstance;
 	}
 
-	-(instancetype)init {
+	- (instancetype)init {
 		if ((self = [super init])) {
-			_server = [MRYIPCCenter centerNamed:@"moe.panties.discordextrasserver"];
-			[_server addTarget:self action:@selector(executeJSbundleTools:)];
+			_messagingCenter = [CPDistributedMessagingCenter centerNamed:@"moe.panties.discordextrasserver"];
+			rocketbootstrap_distributedmessagingcenter_apply(_messagingCenter);
+
+			[_messagingCenter runServerOnCurrentThread];
+			[_messagingCenter registerForMessageName:@"applyPatches" target:self selector:@selector(handleMessageNamed:withUserInfo:)];
 			NSLog(@"[DiscordExtrasServer] Server is running!");
 		}
 

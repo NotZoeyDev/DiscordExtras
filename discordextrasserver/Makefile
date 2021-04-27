@@ -7,6 +7,7 @@ TWEAK_NAME = DiscordExtrasServer
 
 DiscordExtrasServer_FILES = Tweak.x
 DiscordExtrasServer_CFLAGS = -fobjc-arc
-DiscordExtrasServer_LIBRARIES = mryipc
+DiscordExtrasServer_LIBRARIES = rocketbootstrap
+DiscordExtrasServer_PRIVATE_FRAMEWORKS = AppSupport
 
 include $(THEOS_MAKE_PATH)/tweak.mk
