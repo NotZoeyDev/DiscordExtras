@@ -1,0 +1,9 @@
+# Generic ignores
+packages/
+.theos/
+.DS_Store
+
+# Specific to jsbundletools
+jsbundletools/layout/
+jsbundletools/jsbundletools
+jsbundletools/main.go
