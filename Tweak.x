@@ -1,12 +1,19 @@
-#import <Foundation/Foundation.h>
-#import <UIKit/UIKit.h>
-#import <AppSupport/CPDistributedMessagingCenter.h>
-#import <RocketBootstrap/RocketBootstrap.h>
+#import "Tweak.h"
 
-#define BUNDLE_PATH @"/Library/Application Support/DiscordExtrasFiles.bundle"
-#define CACHE_PATH [NSHomeDirectory() stringByAppendingString:@"/Library/Caches/"]
-#define PATCHED_PATH [CACHE_PATH stringByAppendingString:@"patched.jsbundle"]
-#define PATCHES_FOLDER [BUNDLE_PATH stringByAppendingString:@"/patches"]
+// Get hash for data file
+NSString* getHashForFile(NSString *path) {
+	NSData *data = [NSData dataWithContentsOfFile:path];
+	unsigned char md5Buffer[CC_MD5_DIGEST_LENGTH];
+	CC_MD5([data bytes], (CC_LONG)data.length, md5Buffer);
+
+	NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
+	for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
+		[output appendFormat:@"%02x", md5Buffer[i]];
+	}
+
+	return output;
+}
+
 
 // Clear the cached jsbundle files + the patched jsbundle file on startup
 void clearPatches(NSString *patchedPath) {
@@ -15,13 +22,64 @@ void clearPatches(NSString *patchedPath) {
 	if ([[NSFileManager defaultManager] fileExistsAtPath:patchedPath]) {
 		[[NSFileManager defaultManager] removeItemAtPath:patchedPath error:nil];
 	}
+}
 
-	NSArray* files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:CACHE_PATH error:NULL];
+// Check/save hashes and re-apply patches if needed
+void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
+	NSMutableDictionary *hashes = [NSMutableDictionary dictionary];
 
-	for (NSString *file in files) {
-		if ([file containsString:@"main.jsbundle."]||[file containsString:@"manifest.json."]) {
-			[[NSFileManager defaultManager] removeItemAtPath:[CACHE_PATH stringByAppendingString:file] error:nil];
+	if ([[NSFileManager defaultManager] fileExistsAtPath:HASHES_PATH]) {
+		hashes = [[NSMutableDictionary alloc] initWithContentsOfFile:HASHES_PATH];
+	}
+	
+	BOOL doClearPatches = false;
+
+	// Check hash for bundle
+	NSString *bundleHash = getHashForFile(jsbundleFile);
+	NSString *savedBundleHash = [hashes objectForKey:@"bundleHash"];
+
+	if (savedBundleHash) {
+		if (![bundleHash isEqualToString:savedBundleHash]) {
+			NSLog(@"[DiscordExtras] New bundle found.");
+			[hashes setObject:bundleHash forKey:@"bundleHash"];
+			doClearPatches = true;
 		}
+	} else {
+		[hashes setObject:bundleHash forKey:@"bundleHash"];
+		doClearPatches = true;
+	}
+
+	// Check for patches
+	NSString *patchesHash = [[NSString alloc] init];
+	NSString *savedPatchesHash = [hashes objectForKey:@"patchesHash"];
+	NSArray *patches = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:PATCHES_FOLDER error:nil];
+
+	for (NSString *patch in patches) {
+		NSString *patchPath = [NSString stringWithFormat:@"%@/%@", PATCHES_FOLDER, patch];
+		NSString *patchHash = getHashForFile(patchPath);
+		patchesHash = [patchesHash stringByAppendingString:patchHash];
+	}
+
+	if (savedPatchesHash) {
+		if (![patchesHash isEqualToString:savedPatchesHash]) {
+			NSLog(@"[DiscordExtras] New patches found.");
+			[hashes setObject:patchesHash forKey:@"patchesHash"];
+			doClearPatches = true;
+		}
+	} else {
+		[hashes setObject:patchesHash forKey:@"patchesHash"];
+		doClearPatches = true;
+	}
+
+	BOOL success = [hashes writeToFile:HASHES_PATH atomically:YES];
+	if (success) {
+		NSLog(@"[DiscordExtras] Hashes were saved!");
+	} else {
+		NSLog(@"[DiscordExtras] Couldn't save hashed.");
+	}
+
+	if (doClearPatches) {
+		clearPatches(patchedPath);
 	}
 }
 
@@ -57,12 +115,9 @@ NSURL* createBundleFile(NSURL *originalBundle, NSString *patchedPath) {
 
 	NSURL *jsBundlePath = original;
 	NSURL *patchedBundlePath;
-	NSString *patchedPath = [[jsBundlePath.path stringByDeletingLastPathComponent] stringByAppendingString:@"patched.jsbundle"];
-
-	NSLog(@"[DiscordExtras] Original path: %@", jsBundlePath.path);
-	NSLog(@"[DiscordExtras] Patched path: %@", patchedPath);
-
-	clearPatches(patchedPath);
+	NSString *patchedPath = [[jsBundlePath.path stringByDeletingLastPathComponent] stringByAppendingString:@"/patched.jsbundle"];
+	
+	checkHashes(jsBundlePath.path, patchedPath);
 
 	if ([[NSFileManager defaultManager] fileExistsAtPath:patchedPath]) {
 		NSLog(@"[DiscordExtras] Patched jsbundle found, using existing bundle.");
@@ -71,8 +126,6 @@ NSURL* createBundleFile(NSURL *originalBundle, NSString *patchedPath) {
 		NSLog(@"[DiscordExtras] Patched jsbundle not found, creating one!");
 		patchedBundlePath = createBundleFile(jsBundlePath, patchedPath);
 	}
-
-	NSLog(@"[DiscordExtras] Loading bundle: %@", patchedBundlePath);
 
 	return patchedBundlePath;
 }
