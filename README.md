@@ -2,7 +2,6 @@
 
 An iOS tweak that lets you apply patches the iOS Discord client.  
 Available on my repo [here](https://repo.panties.moe).  
-NOTE: This currently doesn't work with the TestFlight version of Discord, I do not have access to it and thus cannot test the tweak alongside it to fix it.  
 
 # Components
 
