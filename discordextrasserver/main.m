@@ -1,7 +1,9 @@
 #import <Foundation/Foundation.h>
 #import <mach/mach.h>
+#import <pthread/spawn.h>
+extern char **environ;
+
 #import "discordExtras_daemonServer.h"
-#import "NSTask.h"
 
 #define MEMORYSTATUS_CMD_SET_JETSAM_TASK_LIMIT 6
 
@@ -15,23 +17,27 @@ kern_return_t dex_discordExtras_patch(mach_port_t server_port, pathname_t bundle
 	NSString *patchedPath = [[NSString alloc] initWithBytes:patchedPathC length:patchedPathCnt encoding:NSUTF8StringEncoding];
 	NSString *patchesPath = [[NSString alloc] initWithBytes:patchesPathC length:patchesPathCnt encoding:NSUTF8StringEncoding];
 
-	NSTask *task = [[NSTask alloc] init];
-	task.launchPath = @"/usr/bin/jsbundletools";
-	task.arguments = @[
-		@"-m",
-		@"patch",
-		@"-p",
-		bundlePath,
-		@"-d",
-		patchesPath,
-		@"-n",
-		patchedPath
-	];
+	pid_t pid;
+	char *argv[] = {
+		"/usr/bin/jsbundletools",
+		"-m",
+		"patch",
+		"-p",
+		(char *)[bundlePath UTF8String],
+		"-d",
+		(char *)[patchesPath UTF8String],
+		"-n",
+		(char *)[patchedPath UTF8String],
+		NULL
+	};
 
-	[task launch];
-	[task waitUntilExit];
-
-	int status = [task terminationStatus];
+	posix_spawnattr_t attr;
+	int status;
+	posix_spawnattr_init(&attr);
+	posix_spawnattr_set_qos_class_np(&attr, QOS_CLASS_USER_INTERACTIVE);
+	posix_spawn(&pid, argv[0], NULL, &attr, argv, environ);
+	waitpid(pid, &status, 0);
+	posix_spawnattr_destroy(&attr);
 
 	return (status == 0) ? KERN_SUCCESS : KERN_FAILURE;
 }
