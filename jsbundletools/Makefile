@@ -13,8 +13,6 @@ all::
 	ldid -Sentitlements.plist jsbundletools
 	mkdir -p layout/usr/bin
 	cp jsbundletools layout/usr/bin
-	chmod +s layout/usr/bin/jsbundletools
-	chmod 4755 layout/usr/bin/jsbundletools
 
 clean::
 	rm -rf layout/usr/bin/jsbundletools
