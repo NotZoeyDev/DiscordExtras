@@ -1,13 +1,11 @@
-ARCHS := arm64 arm64e
-INSTALL_TARGET_PROCESSES = SpringBoard
+ARCHS := arm64
 
 include $(THEOS)/makefiles/common.mk
 
-TWEAK_NAME = DiscordExtrasServer
+TOOL_NAME = DiscordExtrasServer
 
-DiscordExtrasServer_FILES = Tweak.x
+DiscordExtrasServer_FILES = discordExtras_helperServer.c main.m
 DiscordExtrasServer_CFLAGS = -fobjc-arc
-DiscordExtrasServer_LIBRARIES = rocketbootstrap
-DiscordExtrasServer_PRIVATE_FRAMEWORKS = AppSupport
+DiscordExtrasServer_CODESIGN_FLAGS = -SEnt.plist
 
-include $(THEOS_MAKE_PATH)/tweak.mk
+include $(THEOS_MAKE_PATH)/tool.mk
