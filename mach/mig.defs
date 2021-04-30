@@ -1,0 +1,16 @@
+// mig -sheader discordExtras_daemonServer.h -header discordExtras_daemonUser.h mig.defs
+
+subsystem discordExtras_helper 500;
+userprefix dex_;
+serverprefix dex_;
+
+#include <mach/std_types.defs>
+#include <mach/mach_types.defs>
+
+import "pathname_type.h";
+type pathname_t = array[*: 2048] of uint8_t;
+
+routine discordExtras_patch(server_port : mach_port_t;
+             in bundlePath: pathname_t;
+             in patchedPath: pathname_t;
+             in patchesPath: pathname_t);

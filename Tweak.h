@@ -1,8 +1,10 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
-#import <AppSupport/CPDistributedMessagingCenter.h>
-#import <RocketBootstrap/RocketBootstrap.h>
 #import <CommonCrypto/CommonDigest.h>
+#import <mach/mach.h>
+#import "discordExtras_daemonUser.h"
+
+kern_return_t bootstrap_look_up(mach_port_t port, const char *service, mach_port_t *server_port);
 
 #define BUNDLE_PATH @"/Library/Application Support/DiscordExtrasFiles.bundle"
 #define CACHE_PATH [NSHomeDirectory() stringByAppendingString:@"/Library/Caches/"]

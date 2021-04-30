@@ -86,22 +86,28 @@ void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 // Create our patched bundle file and return the path to it
 NSURL* createBundleFile(NSURL *originalBundle, NSString *patchedPath) {
 	@try {
-		CPDistributedMessagingCenter* center = [CPDistributedMessagingCenter centerNamed:@"moe.panties.discordextrasserver"];
-		rocketbootstrap_distributedmessagingcenter_apply(center);
+		mach_port_t server_port;
+		kern_return_t err;
+		if ((err = bootstrap_look_up(bootstrap_port, "lh:moe.panties.discordextras", &server_port)) != KERN_SUCCESS){
+			NSLog(@"[DiscordExtras] Failed to get server: %s", mach_error_string(err));
+			return originalBundle;
+		}
 
-		NSDictionary *result = [center sendMessageAndReceiveReplyName:@"applyPatches" userInfo:@{
-			@"bundlePath": originalBundle.path,
-			@"patchedPath": patchedPath,
-			@"patchesPath": PATCHES_FOLDER
-		}];
+		err = dex_discordExtras_patch(server_port,
+			(unsigned char *)[originalBundle.path UTF8String],
+			[originalBundle.path length],
+			(unsigned char *)[patchedPath UTF8String],
+			[patchedPath length],
+			(unsigned char *)[PATCHES_FOLDER UTF8String],
+			[PATCHES_FOLDER length]);
 
-		if ([[result objectForKey:@"success"] isEqual:@NO]) {
+		if (err != KERN_SUCCESS) {
 			NSLog(@"[DiscordExtras] Error creating patched jsbundle, using default one instead.");
 			return originalBundle;
 		}
 
 		NSLog(@"[DiscordExtras] Patched jsbundle was created!");
-		return [[NSURL alloc] initFileURLWithPath:[result objectForKey:@"path"]];
+		return [[NSURL alloc] initFileURLWithPath:patchedPath];
 	} @catch(NSException *exception) {
 		NSLog(@"[DiscordExtras] Something went really fucking wrong.");
 		return originalBundle;
