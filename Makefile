@@ -1,12 +1,13 @@
 ARCHS := arm64 arm64e
+TARGET := iphone:clang:12.4
 INSTALL_TARGET_PROCESSES = SpringBoard Discord
 
 include $(THEOS)/makefiles/common.mk
 
 TWEAK_NAME = DiscordExtras
-$(TWEAK_NAME)_FRAMEWORKS = UIKit
+$(TWEAK_NAME)_FRAMEWORKS = UIKit coregraphics
 $(TWEAK_NAME)_LIBRARIES = colorpicker
-$(TWEAK_NAME)_FILES = Tweak.x discordExtras_helperUser.c
+$(TWEAK_NAME)_FILES = Tweak.x Utils.x discordExtras_helperUser.c
 $(TWEAK_NAME)_CFLAGS = -fobjc-arc
 
 BUNDLE_NAME = DiscordExtrasFiles

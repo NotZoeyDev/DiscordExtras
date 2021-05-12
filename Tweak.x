@@ -1,28 +1,5 @@
 #import "Tweak.h"
-
-// Get hash for data file
-NSString* getHashForFile(NSString *path) {
-	NSData *data = [NSData dataWithContentsOfFile:path];
-	unsigned char md5Buffer[CC_MD5_DIGEST_LENGTH];
-	CC_MD5([data bytes], (CC_LONG)data.length, md5Buffer);
-
-	NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
-	for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
-		[output appendFormat:@"%02x", md5Buffer[i]];
-	}
-
-	return output;
-}
-
-
-// Clear the cached jsbundle files + the patched jsbundle file on startup
-void clearPatches(NSString *patchedPath) {
-	NSLog(@"[DiscordExtras] Clearing cached files.");
-
-	if ([[NSFileManager defaultManager] fileExistsAtPath:patchedPath]) {
-		[[NSFileManager defaultManager] removeItemAtPath:patchedPath error:nil];
-	}
-}
+#import "Utils.h"
 
 // Check/save hashes and re-apply patches if needed
 void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
@@ -52,7 +29,7 @@ void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 	// Check for patches
 	NSString *patchesHash = [[NSString alloc] init];
 	NSString *savedPatchesHash = [hashes objectForKey:@"patchesHash"];
-	NSArray *patches = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:PATCHES_FOLDER error:nil];
+	NSArray* patches = getPatches();
 
 	for (NSString *patch in patches) {
 		NSString *patchPath = [NSString stringWithFormat:@"%@/%@", PATCHES_FOLDER, patch];
@@ -79,7 +56,7 @@ void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 	}
 
 	if (doClearPatches) {
-		clearPatches(patchedPath);
+		deleteFile(patchedPath);
 	}
 }
 
