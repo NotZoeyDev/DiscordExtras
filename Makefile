@@ -1,5 +1,5 @@
 ARCHS := arm64 arm64e
-TARGET := iphone:clang:latest:12.4
+TARGET := iphone:clang:latest:14.4
 INSTALL_TARGET_PROCESSES = Discord
 
 include $(THEOS)/makefiles/common.mk

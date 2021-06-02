@@ -34,12 +34,12 @@ void deleteFile(NSString *filePath) {
 // Get hashes for a specific file
 NSString* getHashForFile(NSString *path) {
 	NSData *data = [NSData dataWithContentsOfFile:path];
-	unsigned char md5Buffer[CC_MD5_DIGEST_LENGTH];
-	CC_MD5([data bytes], (CC_LONG)data.length, md5Buffer);
+	unsigned char result[CC_SHA256_DIGEST_LENGTH];
+	CC_SHA256(data.bytes, data.length, result);
 
-	NSMutableString *output = [NSMutableString stringWithCapacity:CC_MD5_DIGEST_LENGTH * 2];
-	for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
-		[output appendFormat:@"%02x", md5Buffer[i]];
+	NSMutableString *output = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
+	for (int i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) {
+		[output appendFormat:@"%02x", result[i]];
 	}
 
 	return output;
