@@ -1,15 +1,33 @@
 #import "Tweak.h"
 
+#define substrateService "cy:moe.panties.discordextras";
+#define libhookerService "lh:moe.panties.discordextras";
+
 // Get list of available patches
 NSArray* getPatches() {
   return [[NSFileManager defaultManager] contentsOfDirectoryAtPath:PATCHES_FOLDER error:nil];
 }
 
+char* getServiceName() {
+	char* serviceName = "";
+
+	if (access("/usr/lib/libhooker.dylib", F_OK) == 0) {
+		serviceName = libhookerService;
+	} else {
+		serviceName = substrateService;
+	}
+
+	return serviceName;
+}
+
+// Create a patch for patches list
+void createPatchesJSON() {}
+
 // Delete file
 void deleteFile(NSString *filePath) {
 	if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
 		[[NSFileManager defaultManager] removeItemAtPath:filePath error:nil];
-    NSLog(@"[DiscordExtras] Deleted %@", filePath);
+    NSLog(@"[DE] Deleted %@", filePath);
 	}
 }
 
@@ -25,4 +43,10 @@ NSString* getHashForFile(NSString *path) {
 	}
 
 	return output;
+}
+
+BOOL shouldCheckHashes() {
+	NSString* checkHashFile = @".skip_hashes";
+
+	return ![[NSFileManager defaultManager] fileExistsAtPath:[CACHE_PATH stringByAppendingString:checkHashFile]];
 }

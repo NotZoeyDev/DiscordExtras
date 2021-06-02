@@ -2,7 +2,7 @@
 #import "Utils.h"
 
 // Check/save hashes and re-apply patches if needed
-void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
+BOOL checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 	NSMutableDictionary *hashes = [NSMutableDictionary dictionary];
 
 	if ([[NSFileManager defaultManager] fileExistsAtPath:HASHES_PATH]) {
@@ -17,7 +17,7 @@ void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 
 	if (savedBundleHash) {
 		if (![bundleHash isEqualToString:savedBundleHash]) {
-			NSLog(@"[DiscordExtras] New bundle found.");
+			NSLog(@"[DE] New bundle found");
 			[hashes setObject:bundleHash forKey:@"bundleHash"];
 			doClearPatches = true;
 		}
@@ -39,7 +39,7 @@ void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 
 	if (savedPatchesHash) {
 		if (![patchesHash isEqualToString:savedPatchesHash]) {
-			NSLog(@"[DiscordExtras] New patches found.");
+			NSLog(@"[DE] New patches found");
 			[hashes setObject:patchesHash forKey:@"patchesHash"];
 			doClearPatches = true;
 		}
@@ -48,16 +48,9 @@ void checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 		doClearPatches = true;
 	}
 
-	BOOL success = [hashes writeToFile:HASHES_PATH atomically:YES];
-	if (success) {
-		NSLog(@"[DiscordExtras] Hashes were saved!");
-	} else {
-		NSLog(@"[DiscordExtras] Couldn't save hashed.");
-	}
+	[hashes writeToFile:HASHES_PATH atomically:YES];
 
-	if (doClearPatches) {
-		deleteFile(patchedPath);
-	}
+	return doClearPatches;
 }
 
 // Create our patched bundle file and return the path to it
@@ -65,8 +58,8 @@ NSURL* createBundleFile(NSURL *originalBundle, NSString *patchedPath) {
 	@try {
 		mach_port_t server_port;
 		kern_return_t err;
-		if ((err = bootstrap_look_up(bootstrap_port, "lh:moe.panties.discordextras", &server_port)) != KERN_SUCCESS){
-			NSLog(@"[DiscordExtras] Failed to get server: %s", mach_error_string(err));
+		if ((err = bootstrap_look_up(bootstrap_port, getServiceName(), &server_port)) != KERN_SUCCESS){
+			NSLog(@"[DE] Failed to get server: %s", mach_error_string(err));
 			return originalBundle;
 		}
 
@@ -79,14 +72,14 @@ NSURL* createBundleFile(NSURL *originalBundle, NSString *patchedPath) {
 			[PATCHES_FOLDER length]);
 
 		if (err != KERN_SUCCESS) {
-			NSLog(@"[DiscordExtras] Error creating patched jsbundle, using default one instead.");
+			NSLog(@"[DE] Error creating patched jsbundle");
 			return originalBundle;
 		}
 
-		NSLog(@"[DiscordExtras] Patched jsbundle was created!");
+		NSLog(@"[DE] Patched jsbundle was created");
 		return [[NSURL alloc] initFileURLWithPath:patchedPath];
 	} @catch(NSException *exception) {
-		NSLog(@"[DiscordExtras] Something went really fucking wrong.");
+		NSLog(@"[DE] Something went really fucking wrong");
 		return originalBundle;
 	}
 }
@@ -95,22 +88,24 @@ NSURL* createBundleFile(NSURL *originalBundle, NSString *patchedPath) {
 
 - (id)sourceURLForBridge:(id)arg1 {
 	id original = %orig;
-
-	NSURL *jsBundlePath = original;
-	NSURL *patchedBundlePath;
-	NSString *patchedPath = [[jsBundlePath.path stringByDeletingLastPathComponent] stringByAppendingString:@"/patched.jsbundle"];
 	
-	checkHashes(jsBundlePath.path, patchedPath);
+	NSURL *jsBundlePath = original;
+	NSString *patchedPath = [[jsBundlePath.path stringByDeletingLastPathComponent] stringByAppendingString:@"/patched.jsbundle"];
 
-	if ([[NSFileManager defaultManager] fileExistsAtPath:patchedPath]) {
-		NSLog(@"[DiscordExtras] Patched jsbundle found, using existing bundle.");
-		patchedBundlePath = [[NSURL alloc] initFileURLWithPath:patchedPath];
+	if (shouldCheckHashes() && checkHashes(jsBundlePath.path, patchedPath)) {
+		NSLog(@"[DE] Hashed check failed");
+		return createBundleFile(jsBundlePath, patchedPath);
 	} else {
-		NSLog(@"[DiscordExtras] Patched jsbundle not found, creating one!");
-		patchedBundlePath = createBundleFile(jsBundlePath, patchedPath);
+		NSLog(@"[DE] Skipping hashes check");
+	}
+	
+	if ([[NSFileManager defaultManager] fileExistsAtPath:patchedPath]) {
+		NSLog(@"[DE] Using patched jsbundle");
+		return [[NSURL alloc] initFileURLWithPath:patchedPath];
 	}
 
-	return patchedBundlePath;
+	NSLog(@"[DE] Patching jsbundle");
+	return createBundleFile(jsBundlePath, patchedPath);
 }
 
 %end
