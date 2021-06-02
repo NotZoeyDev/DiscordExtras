@@ -1,6 +1,7 @@
 #import <Foundation/Foundation.h>
 #import <mach/mach.h>
 #import <pthread/spawn.h>
+#import "../Utils.h"
 extern char **environ;
 
 #import "discordExtras_daemonServer.h"
@@ -19,14 +20,14 @@ kern_return_t dex_discordExtras_patch(mach_port_t server_port, pathname_t bundle
 
 	pid_t pid;
 	char *argv[] = {
-		"/usr/bin/jsbundletools",
-		"-m",
-		"patch",
-		"-p",
+		(char *)[@"/usr/bin/jsbundletools" UTF8String],
+		(char *)[@"-m" UTF8String],
+		(char *)[@"patch" UTF8String],
+		(char *)[@"-p" UTF8String],
 		(char *)[bundlePath UTF8String],
-		"-d",
+		(char *)[@"-d" UTF8String],
 		(char *)[patchesPath UTF8String],
-		"-n",
+		(char *)[@"-n" UTF8String],
 		(char *)[patchedPath UTF8String],
 		NULL
 	};
@@ -42,15 +43,17 @@ kern_return_t dex_discordExtras_patch(mach_port_t server_port, pathname_t bundle
 	return (status == 0) ? KERN_SUCCESS : KERN_FAILURE;
 }
 
-int main(){
+int main() {
   memorystatus_control(MEMORYSTATUS_CMD_SET_JETSAM_TASK_LIMIT, getpid(), 0, NULL, 0);
 
 	mach_port_t server_port;
 	kern_return_t err;
-	if ((err = bootstrap_check_in(bootstrap_port, "lh:moe.panties.discordextras", &server_port))){
-		NSLog(@"Failed to check in: %s", mach_error_string(err));
+	if ((err = bootstrap_check_in(bootstrap_port, getServiceName(), &server_port))){
+		NSLog(@"[DES] Failed to check in: %s", mach_error_string(err));
 		return -1;
 	}
+
+	NSLog(@"[DES] Server is started!");
 
 	dispatch_source_t server = dispatch_source_create(DISPATCH_SOURCE_TYPE_MACH_RECV, server_port, 0, dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0));
 	dispatch_source_set_event_handler(server, ^{
@@ -58,8 +61,6 @@ int main(){
 	});
 	dispatch_resume(server);
 	dispatch_main();
-
-	NSLog(@"[DiscordExtrasServer] Server is started!");
 
 	return 0;
 }
