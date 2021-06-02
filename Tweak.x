@@ -15,6 +15,10 @@ BOOL checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 	NSString *bundleHash = getHashForFile(jsbundleFile);
 	NSString *savedBundleHash = [hashes objectForKey:@"bundleHash"];
 
+#ifndef NDEBUG
+	NSLog(@"[DE] bundleHash: %@", bundleHash);
+#endif
+
 	if (savedBundleHash) {
 		if (![bundleHash isEqualToString:savedBundleHash]) {
 			NSLog(@"[DE] New bundle found");
@@ -36,6 +40,10 @@ BOOL checkHashes(NSString *jsbundleFile, NSString *patchedPath) {
 		NSString *patchHash = getHashForFile(patchPath);
 		patchesHash = [patchesHash stringByAppendingString:patchHash];
 	}
+
+#ifndef NDEBUG
+	NSLog(@"[DE] patchesHash: %@", patchesHash);
+#endif
 
 	if (savedPatchesHash) {
 		if (![patchesHash isEqualToString:savedPatchesHash]) {
@@ -92,9 +100,18 @@ NSURL* createBundleFile(NSURL *originalBundle, NSString *patchedPath) {
 	NSURL *jsBundlePath = original;
 	NSString *patchedPath = [[jsBundlePath.path stringByDeletingLastPathComponent] stringByAppendingString:@"/patched.jsbundle"];
 
-	if (shouldCheckHashes() && checkHashes(jsBundlePath.path, patchedPath)) {
-		NSLog(@"[DE] Hashed check failed");
-		return createBundleFile(jsBundlePath, patchedPath);
+#ifndef NDEBUG
+	NSLog(@"[DE] jsBundlePath: %@", jsBundlePath);
+	NSLog(@"[DE] patchedPath: %@", patchedPath);
+#endif
+
+	if (shouldCheckHashes()) {
+		if (checkHashes(jsBundlePath.path, patchedPath)) {
+			NSLog(@"[DE] Hashed check failed");
+			return createBundleFile(jsBundlePath, patchedPath);
+		}
+		
+		NSLog(@"[DE] Hashes check pass");
 	} else {
 		NSLog(@"[DE] Skipping hashes check");
 	}
