@@ -5,9 +5,6 @@ Available on my repo [here](https://repo.panties.moe).
 
 # Components
 
-## DiscordExtrasPrefs
-This includes the preferences used by the tweak, currently only used to list the patches installed but will later be used to set up the theme colours.  
-
 ## DiscordExtrasServer
 This includes the lightweight background service that injects into SpringBoard, since the main Tweak injects itself into Discord directly, it is impossible for me to run my tool to patch the jsbundle file within the Discord process.  
 All it does is wait for an IPC command to run the tool in the background.  
