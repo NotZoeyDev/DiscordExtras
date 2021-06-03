@@ -8,4 +8,4 @@ Author: Zoey
 Section: Tweaks
 SileoDepiction: https://repo.panties.moe/depictions/discordextras
 Depends: mobilesubstrate (>= 0.9.5000)
-Icon: file:///Library/Application%20Support/DiscordExtrasFiles.bundle/Icon.png
+Icon: https://repo.panties.moe/icons/DiscordExtras.png
